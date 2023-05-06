@@ -1,22 +1,23 @@
 package com.base.sampleapp
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
-import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import com.base.openAppSettings
 import com.base.sampleapp.databinding.FragmentFirstBinding
+import com.base.showSnackBarWithAction
 import com.base.utill.requestPermission
-import com.base.utill.requestPermissions
+import com.google.android.material.snackbar.Snackbar
+
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -32,29 +33,27 @@ class FirstFragment : Fragment() {
 
     private val readStoragePermissionResult: ActivityResultLauncher<Array<String>> by requestPermission(
         permissions,
-        granted = {
+        grantedAll = {
             Toast.makeText(requireContext(), "Permission Granted", Toast.LENGTH_SHORT).show()
-            pickImage.launch("image/*")
-        }, denied = {
+            // pickImage.launch("image/*")
+        },
+        denied = {
             if (!shouldShowRequestPermissionRationale(it)) {
-                Toast.makeText(
-                    requireContext(),
-                    "Enable Permissions From App Settings",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showSnackBarWithAction(
+                    message = "Please Enable App Settings",
+                    actionMessage = "Open",
+                    textColor = R.color.white,
+                    drawableRes = R.drawable.bg_snackbar
+                ) {
+                    openAppSettings()
+                }
                 return@requestPermission
             }
-            Toast.makeText(
-                requireContext(),
-                "Permission Denied $it",
-                Toast.LENGTH_SHORT
-            ).show()
-        },
-        explained = {
-            Toast.makeText(requireContext(), "Permanent Denied", Toast.LENGTH_SHORT).show()
-        }
 
-    )
+        },
+
+
+        )
 
 
 //    private val requestPermissionLauncher = registerForActivityResult(
@@ -105,6 +104,7 @@ class FirstFragment : Fragment() {
             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             permissions.add(Manifest.permission.CAMERA)
+            permissions.add(Manifest.permission.RECORD_AUDIO)
         }
 
         _binding = FragmentFirstBinding.inflate(inflater, container, false)
@@ -136,5 +136,20 @@ class FirstFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun showSnackbar(message: String) {
+        // Get the root view of the fragment
+        view?.let {
+            val snackbar = Snackbar.make(it, message, Snackbar.ANIMATION_MODE_SLIDE)
+            snackbar.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
+            snackbar.setAction("Open") {
+                // Code to execute when the action is clicked
+            }.setActionTextColor(ContextCompat.getColor(requireContext(), R.color.white))
+            snackbar.view.background =
+                ContextCompat.getDrawable(requireContext(), R.drawable.bg_snackbar)
+            snackbar.show()
+        }
+
     }
 }

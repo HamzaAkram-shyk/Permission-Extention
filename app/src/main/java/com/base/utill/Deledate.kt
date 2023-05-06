@@ -10,20 +10,17 @@ import kotlin.reflect.KProperty
 
 inline fun <reified R : ActivityResultLauncher<Array<String>>> Fragment.requestPermission(
     permission: List<String>,
-    noinline granted: (permission: List<String>) -> Unit = {},
+    noinline grantedAll: (permission: List<String>) -> Unit = {},
     noinline denied: (permission: String) -> Unit = {},
-    noinline explained: (permission: List<String>) -> Unit = {}
-
 ): ReadOnlyProperty<Fragment, R> =
-    PermissionResultDelegate(this, permission.toTypedArray(), granted, denied, explained)
+    PermissionResultDelegate(this, permission.toTypedArray(), grantedAll, denied)
 
 
 class PermissionResultDelegate<R : ActivityResultLauncher<Array<String>>>(
     private val fragment: Fragment,
     private val permission: Array<String>,
-    private val granted: (permission: List<String>) -> Unit,
+    private val grantedAll: (permission: List<String>) -> Unit,
     private val denied: (permission: String) -> Unit,
-    private val explained: (permission: List<String>) -> Unit
 ) : ReadOnlyProperty<Fragment, R> {
 
     private var permissionResult: ActivityResultLauncher<Array<String>>? = null
@@ -37,7 +34,7 @@ class PermissionResultDelegate<R : ActivityResultLauncher<Array<String>>>(
                         ActivityResultContracts.RequestMultiplePermissions()
                     ) { permissions ->
                         if (permissions.all { it.value }) {
-                            granted(permission.toList())
+                            grantedAll(permission.toList())
                             return@registerForActivityResult
                         } else {
                             val permission = permissions.entries.find { !it.value }
@@ -45,19 +42,6 @@ class PermissionResultDelegate<R : ActivityResultLauncher<Array<String>>>(
                                 denied(permission.key)
                                 return@registerForActivityResult
                             }
-                        }
-
-
-//                        when {
-//                            permissions.all { it.value } -> granted(permission.toList())
-//                            else -> explained(permission.toList())
-//                        }
-                        permissions.entries.forEach {
-                            if (!shouldShowRequestPermissionRationale(it.key)) {
-                                explained(permission.toList())
-                                return@registerForActivityResult
-                            }
-
                         }
                     }
                 }
@@ -70,6 +54,7 @@ class PermissionResultDelegate<R : ActivityResultLauncher<Array<String>>>(
     }
 
     override fun getValue(thisRef: Fragment, property: KProperty<*>): R {
+
         permissionResult?.let { return (it as R) }
 
         error("Failed to Initialize Permission")
